@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 CORS(app)  # This will enable CORS for all routes
 
 # Load the saved model
-model = keras.models.load_model('../final_model.keras')
+model = keras.models.load_model('final_model.keras')
 
 # Function to preprocess and predict on a single image
 def preprocess_image(img_data):

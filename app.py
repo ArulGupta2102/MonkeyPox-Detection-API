@@ -1,9 +1,29 @@
 import os
 
 from flask import (Flask, redirect, render_template, request,
-                   send_from_directory, url_for)
+                   send_from_directory, url_for,jsonify)
+import tensorflow as tf
+import numpy as np
+from tensorflow.keras.preprocessing import image
+from io import BytesIO
+import base64
+
+model = tf.keras.models.load_model('final_model.keras')
 
 app = Flask(__name__)
+
+# Function to preprocess and predict on a single image
+def preprocess_image(img_data):
+    img = image.load_img(BytesIO(img_data), target_size=(224, 224))
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = img_array / 255.0
+    return img_array
+
+def predict_image(model, img_data):
+    img_array = preprocess_image(img_data)
+    prediction = model.predict(img_array)
+    return prediction
 
 
 @app.route('/')
@@ -26,6 +46,20 @@ def hello():
    else:
        print('Request for hello page received with no name or blank name -- redirecting')
        return redirect(url_for('index'))
+   
+@app.route('/predict', methods=['POST'])
+def predict():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file provided'}), 400
+
+    img_file = request.files['image']
+    img_data = img_file.read()
+
+    prediction = predict_image(model, img_data)
+    classes = ['Chickenpox', 'Healthy', 'Measles', 'Monkeypox']
+    predicted_class = classes[np.argmax(prediction)]
+
+    return jsonify({'prediction': predicted_class})
 
 
 if __name__ == '__main__':
